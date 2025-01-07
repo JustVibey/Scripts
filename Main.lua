@@ -24,6 +24,7 @@ local playback = false
 local playbackSpeed = 1
 local loopCount = 1
 local stopPlaybackFlag = false
+local autoraceLoop = nil  -- Store the autorace loop for stopping later
 
 -- Start Recording Button
 Tab:Button{
@@ -242,22 +243,31 @@ AutoraceTab:Toggle{
     Description = "Autorace Sandy Shores",
     Callback = function(state)
         if state then
-            -- If enabled, teleport the vehicle to the desired CFrame in a loop
+            -- If enabled, start autorace loop
             print("Autorace enabled - Sandy Shores")
+            autoraceLoop = true
             spawn(function()
-                while true do
-                    if not vehicle then break end
-                    -- Teleport the vehicle to the specified CFrame
-                    local targetCFrame = CFrame.new(33.4263916, 13.992197, -2335.7002, 
-                        -0.000281376473, -0.354013532, -0.935240984, 
-                        0.999999881, 6.94168994e-05, -0.000327080896, 
-                        0.000180645933, -0.935241342, 0.354012847)
-                    vehicle:SetPrimaryPartCFrame(targetCFrame)
-                    task.wait(0.1) -- Delay of 0.1 seconds
+                while autoraceLoop do
+                    if vehicle then
+                        -- Teleport the vehicle to the updated CFrame
+                        local targetCFrame = CFrame.new(32, 15, -2335, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+                        vehicle:SetPrimaryPartCFrame(targetCFrame)
+                    end
+                    
+                    -- Check if the state text matches "Race is starting.."
+                    local raceStateLabel = game:GetService("Players").LocalPlayer.PlayerGui["RacePadInfo (SandyShores)"].Container.Main.Background.Footer.StateBorder.State.State
+                    if raceStateLabel and raceStateLabel.Text == "Race is starting.." then
+                        -- If the race is starting, stop the autorace loop
+                        print("Race is starting... Autorace stopped.")
+                        autoraceLoop = false
+                    end
+
+                    task.wait(0) -- No delay, immediate teleport
                 end
             end)
         else
-            -- If unchecked, stop autorace and give feedback
+            -- If unchecked, stop the autorace loop
+            autoraceLoop = false
             print("Autorace disabled")
         end
     end
