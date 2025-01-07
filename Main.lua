@@ -253,7 +253,7 @@ AutoraceTab:Toggle{
                         0.999999881, 6.94168994e-05, -0.000327080896, 
                         0.000180645933, -0.935241342, 0.354012847)
                     vehicle:SetPrimaryPartCFrame(targetCFrame)
-                    task.wait(0) -- Teleport instantly, 0 delay
+                    task.wait(0.1) -- Delay of 0.1 seconds
                 end
             end)
         else
