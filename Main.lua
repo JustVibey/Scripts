@@ -24,9 +24,10 @@ local playback = false
 local playbackSpeed = 1
 local loopCount = 1
 local stopPlaybackFlag = false
-local autoraceLoop = nil  -- Store the autorace loop for stopping later
-local trackRecording = nil  -- Store the recording data for playback
-local trackPlaybackLoopCount = 3 -- Loop track recording 3 times
+local autoraceLoopRunning = false
+local trackRecording = nil
+local trackPlaybackLoopCount = 3
+local autoraceSpeed = 1  -- Autorace speed multiplier
 
 -- Start Recording Button
 Tab:Button{
@@ -102,6 +103,29 @@ Tab:Button{
     end
 }
 
+-- Playback Speed Textbox
+Tab:Textbox{
+    Name = "Set Playback Speed",
+    Callback = function(text)
+        local speed = tonumber(text)
+        if speed and speed > 0 then
+            playbackSpeed = speed
+            GUI:Notification{
+                Title = "Success",
+                Text = "Playback speed updated to " .. playbackSpeed,
+                Duration = 3
+            }
+            print("Playback speed set to:", playbackSpeed)
+        else
+            GUI:Notification{
+                Title = "Error",
+                Text = "Invalid playback speed. Enter a number greater than 0.",
+                Duration = 3
+            }
+        end
+    end
+}
+
 -- Paste Recording Textbox
 Tab:Textbox{
     Name = "Paste Recording",
@@ -128,121 +152,16 @@ Tab:Textbox{
     end
 }
 
--- Playback Speed Textbox
-Tab:Textbox{
-    Name = "Set Playback Speed",
-    Callback = function(text)
-        local speed = tonumber(text)
-        if speed and speed > 0 then
-            playbackSpeed = speed
-            GUI:Notification{
-                Title = "Success",
-                Text = "Playback speed updated to " .. playbackSpeed,
-                Duration = 3
-            }
-            print("Playback speed set to:", playbackSpeed)
-        else
-            GUI:Notification{
-                Title = "Error",
-                Text = "Invalid playback speed. Enter a number greater than 0.",
-                Duration = 3
-            }
-        end
-    end
-}
-
--- Playback Button
-Tab:Button{
-    Name = "Playback Recording",
-    Description = "Play back the loaded recording.",
-    Callback = function()
-        if not isRecording and #recording > 0 then
-            print("Playback started")
-            playback = true
-
-            spawn(function()
-                for i, frameData in ipairs(recording) do
-                    if not playback then break end
-                    if vehicle and vehicle.PrimaryPart then
-                        vehicle:SetPrimaryPartCFrame(CFrame.new(unpack(frameData.cframe)))
-                    end
-                    if i < #recording then
-                        local delay = ((recording[i + 1].time - frameData.time) / playbackSpeed)
-                        if delay > 0 then task.wait(delay) end
-                    end
-                end
-
-                playback = false
-                print("Playback ended")
-            end)
-        else
-            GUI:Notification{
-                Title = "Error",
-                Text = "No recording available for playback.",
-                Duration = 3
-            }
-        end
-    end
-}
-
--- Stop Playback Button
-Tab:Button{
-    Name = "Stop Playback",
-    Description = "Stop the current playback.",
-    Callback = function()
-        if playback then
-            playback = false
-            stopPlaybackFlag = true
-            print("Playback stopped.")
-            GUI:Notification{
-                Title = "Success",
-                Text = "Playback stopped.",
-                Duration = 3
-            }
-        else
-            GUI:Notification{
-                Title = "Error",
-                Text = "No playback in progress.",
-                Duration = 3
-            }
-        end
-    end
-}
-
--- Loop Count Textbox
-Tab:Textbox{
-    Name = "Loop Count for Playback",
-    Callback = function(text)
-        local loop = tonumber(text)
-        if loop and loop > 0 then
-            loopCount = loop
-            GUI:Notification{
-                Title = "Success",
-                Text = "Playback loop count set to " .. loopCount,
-                Duration = 3
-            }
-            print("Playback loop count set to:", loopCount)
-        else
-            GUI:Notification{
-                Title = "Error",
-                Text = "Invalid loop count. Enter a number greater than 0.",
-                Duration = 3
-            }
-        end
-    end
-}
-
--- New "Autorace" Tab
+-- Autorace Tab
 local AutoraceTab = GUI:Tab{
     Name = "Autorace",
     Icon = "rbxassetid://8569322835"
 }
 
 -- Enable Autorace Checkbox
-local autoraceLoopRunning = false  -- Flag to track autorace loop status
 AutoraceTab:Toggle{
     Name = "Enable Autorace",
-    StartingState = false, -- Default state is disabled
+    StartingState = false,
     Description = "Autorace Sandy Shores",
     Callback = function(state)
         if state then
@@ -251,11 +170,17 @@ AutoraceTab:Toggle{
             autoraceLoopRunning = true
             spawn(function()
                 while autoraceLoopRunning do
-                    if vehicle then
-                        -- Teleport the vehicle to the updated CFrame
-                        local targetCFrame = CFrame.new(32, 15, -2335, 1, 0, 0, 0, 1, 0, 0, 0, 1)
-                        vehicle:SetPrimaryPartCFrame(targetCFrame)
+                    -- Ensure the vehicle exists
+                    if not vehicle then
+                        print("No vehicle found, stopping autorace.")
+                        autoraceLoopRunning = false
+                        break
                     end
+
+                    -- Teleport the vehicle to the updated CFrame
+                    local targetCFrame = CFrame.new(32, 15, -2335, 1, 0, 0, 0, 1, 0, 0, 0, 1)
+                    vehicle:SetPrimaryPartCFrame(targetCFrame)
+                    print("Vehicle teleported to: ", targetCFrame)
 
                     -- Check if "Race is starting.." condition is met
                     local raceState = game:GetService("Players").LocalPlayer.PlayerGui["RacePadInfo (SandyShores)"].Container.Main.Background.Footer.StateBorder.State.State
@@ -264,23 +189,22 @@ AutoraceTab:Toggle{
                         autoraceLoopRunning = false
                         break
                     end
-                    -- Use a delay of 0.1 between teleportations
                     task.wait(0.1)
                 end
 
                 -- After the loop ends, wait for 30 seconds before playing the recording
                 if autoraceLoopRunning == false and trackRecording then
-                    wait(30)  -- Delay for 30 seconds before playing the recording
+                    wait(30)
                     print("Starting track recording playback")
 
                     for loop = 1, trackPlaybackLoopCount do
-                        -- Loop playback 3 times
+                        -- Loop playback multiple times
                         for i, frameData in ipairs(trackRecording) do
                             if vehicle and vehicle.PrimaryPart then
                                 vehicle:SetPrimaryPartCFrame(CFrame.new(unpack(frameData.cframe)))
                             end
                             if i < #trackRecording then
-                                local delay = ((trackRecording[i + 1].time - frameData.time) / playbackSpeed)
+                                local delay = ((trackRecording[i + 1].time - frameData.time) / playbackSpeed) * autoraceSpeed
                                 if delay > 0 then task.wait(delay) end
                             end
                         end
@@ -291,7 +215,7 @@ AutoraceTab:Toggle{
         else
             -- If unchecked, stop the autorace loop and stop playback
             autoraceLoopRunning = false
-            playback = false  -- Stop the recording playback if autorace is disabled
+            playback = false
             print("Autorace disabled, playback stopped.")
         end
     end
@@ -322,3 +246,27 @@ AutoraceTab:Textbox{
         end
     end
 }
+
+-- Autorace Speed Textbox for adjusting playback speed
+AutoraceTab:Textbox{
+    Name = "Set Autorace Speed",
+    Callback = function(text)
+        local speed = tonumber(text)
+        if speed and speed > 0 then
+            autoraceSpeed = speed
+            GUI:Notification{
+                Title = "Success",
+                Text = "Autorace speed updated to " .. autoraceSpeed,
+                Duration = 3
+            }
+            print("Autorace speed set to:", autoraceSpeed)
+        else
+            GUI:Notification{
+                Title = "Error",
+                Text = "Invalid autorace speed. Enter a number greater than 0.",
+                Duration = 3
+            }
+        end
+    end
+}
+
