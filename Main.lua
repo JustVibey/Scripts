@@ -1,3 +1,36 @@
+-- Autorace Tab
+local AutoraceTab = GUI:Tab{
+    Name = "Autorace",
+    Icon = "rbxassetid://8569322835"
+}
+
+-- Autorace variables
+local autoracePlaybackSpeed = 1  -- Default speed for autorace playback
+
+-- Autorace Speed Textbox
+AutoraceTab:Textbox{
+    Name = "Autorace Speed",
+    Description = "Adjust the speed of the playback during autorace.",
+    Callback = function(text)
+        local speed = tonumber(text)
+        if speed and speed > 0 then
+            autoracePlaybackSpeed = speed
+            GUI:Notification{
+                Title = "Success",
+                Text = "Autorace speed set to " .. autoracePlaybackSpeed,
+                Duration = 3
+            }
+            print("Autorace playback speed set to:", autoracePlaybackSpeed)
+        else
+            GUI:Notification{
+                Title = "Error",
+                Text = "Invalid speed. Please enter a positive number.",
+                Duration = 3
+            }
+        end
+    end
+}
+
 -- Enable Autorace Checkbox
 local autoraceLoopRunning = false  -- Flag to track autorace loop status
 AutoraceTab:Toggle{
@@ -33,14 +66,15 @@ AutoraceTab:Toggle{
                     wait(23)  -- Delay for 23 seconds before playing the recording
                     print("Starting track recording playback")
 
+                    -- Loop to replay the track 3 times
                     for loop = 1, trackPlaybackLoopCount do
-                        -- Loop playback 3 times
                         for i, frameData in ipairs(trackRecording) do
                             if vehicle and vehicle.PrimaryPart then
                                 vehicle:SetPrimaryPartCFrame(CFrame.new(unpack(frameData.cframe)))
                             end
                             if i < #trackRecording then
-                                local delay = ((trackRecording[i + 1].time - frameData.time) / playbackSpeed)
+                                -- Adjust the playback speed based on autorace speed setting
+                                local delay = ((trackRecording[i + 1].time - frameData.time) / (autoracePlaybackSpeed))
                                 if delay > 0 then task.wait(delay) end
                             end
                         end
