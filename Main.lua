@@ -194,7 +194,7 @@ AutoraceTab:Toggle{
 
                 -- After the loop ends, wait for 30 seconds before playing the recording
                 if autoraceLoopRunning == false and trackRecording then
-                    wait(30)
+                    wait(28)
                     print("Starting track recording playback")
 
                     for loop = 1, trackPlaybackLoopCount do
