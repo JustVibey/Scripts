@@ -196,16 +196,7 @@ local function handleAltAccount(player, targetCFrame)
                         wait(10)  -- Wait 10 seconds
 
                         -- Execute additional steps
-                        local args = {
-                            [1] = mainCarName
-                        }
-                        game:GetService("ReplicatedStorage"):WaitForChild("SpawnCar"):FireServer(unpack(args))
-
-                        wait(1) -- Wait 1 second
-
-                        game:GetService("ReplicatedStorage"):WaitForChild("SpawnCar"):FireServer(unpack(args))
-
-                        wait(1) -- Wait 1 second
+                        game:GetService("ReplicatedStorage"):WaitForChild("DespawnCar"):FireServer()
 
                         -- Wait until the text changes to "Players Waiting (1/4)"
                         while true do
@@ -215,6 +206,12 @@ local function handleAltAccount(player, targetCFrame)
                             end
                             wait(0.1) -- Check delay of 0.1 seconds
                         end
+
+                        -- Spawn the car
+                        local args = {
+                            [1] = mainCarName
+                        }
+                        game:GetService("ReplicatedStorage"):WaitForChild("SpawnCar"):FireServer(unpack(args))
 
                         break
                     end
